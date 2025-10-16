@@ -142,8 +142,8 @@
                             <td>@(pendiente.EsViableTecnicamente ? "Sí" : "No")</td>
                             <td class="acciones">
                                 <button class="link" @onclick="() => SeleccionarParaEditar(pendiente.Id)">Editar</button>
-                                <button class="link" @onclick="() => CambiarEstadoAsync(pendiente.Id, \"Cerrado\")" disabled="@(pendiente.Estado == "Cerrado")">Cerrar</button>
-                                <button class="link" @onclick="() => CambiarEstadoAsync(pendiente.Id, \"No viable\")" disabled="@(pendiente.Estado == "No viable")">No viable</button>
+                                <button class="link" @onclick='() => CambiarEstadoAsync(pendiente.Id, "Cerrado")' disabled='@(pendiente.Estado == "Cerrado")'>Cerrar</button>
+                                <button class="link" @onclick='() => CambiarEstadoAsync(pendiente.Id, "No viable")' disabled='@(pendiente.Estado == "No viable")'>No viable</button>
                             </td>
                         </tr>
                     }
