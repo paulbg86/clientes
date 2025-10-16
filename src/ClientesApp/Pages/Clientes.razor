@@ -1,5 +1,6 @@
 @page "/clientes"
 @inject ClientesApp.Data.AppDbContext Db
+@inject NavigationManager Navigation
 
 <PageTitle>Clientes</PageTitle>
 
@@ -38,7 +39,8 @@
             <th>Email</th>
             <th>Teléfono</th>
             <th>Registro</th>
-            <th></th>
+            <th>Acciones</th>
+            <th>Pendientes</th>
         </tr>
     </thead>
     <tbody>
@@ -62,6 +64,9 @@
                     <td>@c.FechaRegistro.ToString("yyyy-MM-dd HH:mm")</td>
                     <td>
                         <button class="link" @onclick="() => EliminarAsync(c.Id)">Eliminar</button>
+                    </td>
+                    <td>
+                        <button class="link secondary" @onclick="() => IrAPendientes(c.Id)">Pendientes</button>
                     </td>
                 </tr>
             }
@@ -105,6 +110,11 @@
         _clientes?.RemoveAll(x => x.Id == id);
         StateHasChanged();
     }
+
+    private void IrAPendientes(int id)
+    {
+        Navigation.NavigateTo($"/pendientes/{id}");
+    }
 }
 
 @code {
@@ -121,4 +131,5 @@
 .table th, .table td { border: 1px solid #ddd; padding: .5rem; }
 .table th { background: #f6f8fa; text-align: left; }
 .link { background:none; border:none; color:#d00; cursor:pointer; }
+.link.secondary { color:#0d6efd; }
 </style>
