@@ -1,0 +1,481 @@
+@page "/pendientes"
+@page "/pendientes/{ClienteId:int?}"
+@using ClientesApp.Models
+@using Microsoft.EntityFrameworkCore
+@using System.ComponentModel.DataAnnotations
+@inject ClientesApp.Data.AppDbContext Db
+@inject NavigationManager Navigation
+
+<PageTitle>Pendientes de clientes</PageTitle>
+
+<h1>Pendientes de clientes</h1>
+
+@if (!string.IsNullOrEmpty(_mensaje))
+{
+    <div class="alert success">@_mensaje</div>
+}
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert error">@_error</div>
+}
+
+<div class="layout">
+    <section class="card">
+        <header>
+            <h2>@(_editandoId.HasValue ? "Editar pendiente" : "Nuevo pendiente")</h2>
+        </header>
+        <EditForm Model="_formModel" OnValidSubmit="GuardarPendienteAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-grid">
+                <div>
+                    <label>Cliente</label>
+                    <InputSelect class="input" @bind-Value="_formModel.ClienteId">
+                        <option value="0">Seleccione un cliente</option>
+                        @foreach (var cliente in _clientes)
+                        {
+                            <option value="@cliente.Id">@cliente.Nombre</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="full">
+                    <label>Descripción de la solicitud</label>
+                    <InputTextArea class="input" @bind-Value="_formModel.DescripcionSolicitud" rows="4" />
+                </div>
+                <div>
+                    <label>Fecha límite</label>
+                    <InputDate class="input" @bind-Value="_formModel.FechaLimiteEntrega" />
+                </div>
+                <div>
+                    <label>Estado</label>
+                    <InputSelect class="input" @bind-Value="_formModel.Estado">
+                        @foreach (var estado in _estados)
+                        {
+                            <option value="@estado">@estado</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div>
+                    <label class="checkbox"><InputCheckbox @bind-Value="_formModel.RequiereMasInformacion" /> Requiere más información</label>
+                </div>
+                <div>
+                    <label class="checkbox"><InputCheckbox @bind-Value="_formModel.InformacionRecibida" /> Información recibida</label>
+                </div>
+                <div>
+                    <label class="checkbox"><InputCheckbox @bind-Value="_formModel.EsViableTecnicamente" /> Es viable técnicamente</label>
+                </div>
+                <div class="full">
+                    <label>Notas adicionales</label>
+                    <InputTextArea class="input" @bind-Value="_formModel.NotasAdicionales" rows="3" />
+                </div>
+                <div class="full acciones-form">
+                    <button type="submit" class="btn">@(_editandoId.HasValue ? "Actualizar" : "Crear")</button>
+                    <button type="button" class="btn secondary" @onclick="CancelarEdicion">Cancelar</button>
+                </div>
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="card">
+        <header>
+            <h2>Listado</h2>
+        </header>
+        <div class="filtros">
+            <div>
+                <label>Cliente</label>
+                <InputSelect class="input" @bind-Value="_filtroClienteId" @onchange="_ => AplicarFiltrosAsync()">
+                    <option value="">Todos</option>
+                    @foreach (var cliente in _clientes)
+                    {
+                        <option value="@cliente.Id">@cliente.Nombre</option>
+                    }
+                </InputSelect>
+            </div>
+            <div>
+                <label>Estado</label>
+                <InputSelect class="input" @bind-Value="_filtroEstado" @onchange="_ => AplicarFiltrosAsync()">
+                    <option value="Todos">Todos</option>
+                    @foreach (var estado in _estados)
+                    {
+                        <option value="@estado">@estado</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="acciones">
+                <button class="btn secondary" type="button" @onclick="LimpiarFiltros">Limpiar filtros</button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Fecha límite</th>
+                    <th>Requiere info</th>
+                    <th>Info recibida</th>
+                    <th>Viable</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (_pendientes is null)
+                {
+                    <tr><td colspan="8">Cargando...</td></tr>
+                }
+                else if (_pendientes.Count == 0)
+                {
+                    <tr><td colspan="8">Sin pendientes</td></tr>
+                }
+                else
+                {
+                    @foreach (var pendiente in _pendientes)
+                    {
+                        <tr class="@(_editandoId == pendiente.Id ? "selected" : null)">
+                            <td>@pendiente.Cliente?.Nombre</td>
+                            <td>@pendiente.DescripcionSolicitud</td>
+                            <td>@pendiente.Estado</td>
+                            <td>@pendiente.FechaLimiteEntrega.ToString("yyyy-MM-dd")</td>
+                            <td>@(pendiente.RequiereMasInformacion ? "Sí" : "No")</td>
+                            <td>@(pendiente.InformacionRecibida ? "Sí" : "No")</td>
+                            <td>@(pendiente.EsViableTecnicamente ? "Sí" : "No")</td>
+                            <td class="acciones">
+                                <button class="link" @onclick="() => SeleccionarParaEditar(pendiente.Id)">Editar</button>
+                                <button class="link" @onclick="() => CambiarEstadoAsync(pendiente.Id, \"Cerrado\")" disabled="@(pendiente.Estado == "Cerrado")">Cerrar</button>
+                                <button class="link" @onclick="() => CambiarEstadoAsync(pendiente.Id, \"No viable\")" disabled="@(pendiente.Estado == "No viable")">No viable</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </section>
+</div>
+
+@code {
+    [Parameter]
+    public int? ClienteId { get; set; }
+
+    private readonly List<string> _estados = new() { "Pendiente", "En revisión", "Cerrado", "No viable" };
+    private List<Cliente> _clientes = new();
+    private List<PendienteCliente>? _pendientes;
+    private PendienteFormModel _formModel = PendienteFormModel.Crear();
+    private int? _editandoId;
+    private int? _filtroClienteId;
+    private string _filtroEstado = "Todos";
+    private string? _mensaje;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = await Db.Clientes
+            .OrderBy(x => x.Nombre)
+            .ToListAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ClienteId.HasValue && ClienteId.Value > 0)
+        {
+            _filtroClienteId = ClienteId;
+            if (_formModel.ClienteId == 0)
+            {
+                _formModel.ClienteId = ClienteId.Value;
+            }
+        }
+
+        await AplicarFiltrosAsync();
+    }
+
+    private async Task GuardarPendienteAsync()
+    {
+        _mensaje = null;
+        _error = null;
+
+        if (_formModel.ClienteId <= 0)
+        {
+            _error = "Debe seleccionar un cliente válido.";
+            return;
+        }
+
+        if (!await Db.Clientes.AnyAsync(c => c.Id == _formModel.ClienteId))
+        {
+            _error = "El cliente seleccionado no existe.";
+            return;
+        }
+
+        if (_editandoId.HasValue)
+        {
+            var existente = await Db.PendientesCliente.FirstOrDefaultAsync(x => x.Id == _editandoId.Value);
+            if (existente is null)
+            {
+                _error = "No se encontró el pendiente.";
+                _editandoId = null;
+                return;
+            }
+
+            MapearFormularioAEntidad(existente);
+            await Db.SaveChangesAsync();
+            _mensaje = "Pendiente actualizado correctamente.";
+        }
+        else
+        {
+            var nuevo = new PendienteCliente();
+            MapearFormularioAEntidad(nuevo);
+            Db.PendientesCliente.Add(nuevo);
+            await Db.SaveChangesAsync();
+            _mensaje = "Pendiente creado correctamente.";
+        }
+
+        await AplicarFiltrosAsync();
+        CancelarEdicion();
+    }
+
+    private async Task AplicarFiltrosAsync()
+    {
+        var query = Db.PendientesCliente
+            .Include(x => x.Cliente)
+            .AsQueryable();
+
+        if (_filtroClienteId.HasValue)
+        {
+            query = query.Where(x => x.ClienteId == _filtroClienteId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filtroEstado) && _filtroEstado != "Todos")
+        {
+            query = query.Where(x => x.Estado == _filtroEstado);
+        }
+
+        _pendientes = await query
+            .OrderByDescending(x => x.FechaLimiteEntrega)
+            .ThenBy(x => x.Id)
+            .ToListAsync();
+    }
+
+    private async Task CambiarEstadoAsync(int id, string estado)
+    {
+        var pendiente = await Db.PendientesCliente.FirstOrDefaultAsync(x => x.Id == id);
+        if (pendiente is null)
+        {
+            _error = "No se encontró el pendiente seleccionado.";
+            return;
+        }
+
+        pendiente.Estado = estado;
+        await Db.SaveChangesAsync();
+        _mensaje = $"Pendiente actualizado a '{estado}'.";
+        await AplicarFiltrosAsync();
+    }
+
+    private async Task SeleccionarParaEditar(int id)
+    {
+        var pendiente = await Db.PendientesCliente.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (pendiente is null)
+        {
+            _error = "No se encontró el pendiente para editar.";
+            return;
+        }
+
+        _editandoId = id;
+        _formModel = PendienteFormModel.DesdeEntidad(pendiente);
+    }
+
+    private void CancelarEdicion()
+    {
+        _editandoId = null;
+        _formModel = PendienteFormModel.Crear();
+        if (_filtroClienteId.HasValue)
+        {
+            _formModel.ClienteId = _filtroClienteId.Value;
+        }
+    }
+
+    private async Task LimpiarFiltros()
+    {
+        _filtroClienteId = null;
+        _filtroEstado = "Todos";
+        await AplicarFiltrosAsync();
+    }
+
+    private void MapearFormularioAEntidad(PendienteCliente entidad)
+    {
+        entidad.ClienteId = _formModel.ClienteId;
+        entidad.DescripcionSolicitud = _formModel.DescripcionSolicitud;
+        entidad.FechaLimiteEntrega = _formModel.FechaLimiteEntrega;
+        entidad.Estado = _formModel.Estado;
+        entidad.RequiereMasInformacion = _formModel.RequiereMasInformacion;
+        entidad.InformacionRecibida = _formModel.InformacionRecibida;
+        entidad.EsViableTecnicamente = _formModel.EsViableTecnicamente;
+        entidad.NotasAdicionales = _formModel.NotasAdicionales;
+    }
+
+    private class PendienteFormModel
+    {
+        [Required]
+        [Range(1, int.MaxValue, ErrorMessage = "Seleccione un cliente válido")]
+        public int ClienteId { get; set; }
+
+        [Required]
+        [StringLength(2000)]
+        public string DescripcionSolicitud { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime FechaLimiteEntrega { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string Estado { get; set; } = "Pendiente";
+
+        public bool RequiereMasInformacion { get; set; }
+        public bool InformacionRecibida { get; set; }
+        public bool EsViableTecnicamente { get; set; }
+
+        [StringLength(2000)]
+        public string? NotasAdicionales { get; set; }
+
+        public static PendienteFormModel Crear()
+            => new() { FechaLimiteEntrega = DateTime.Today.AddDays(7) };
+
+        public static PendienteFormModel DesdeEntidad(PendienteCliente entidad)
+            => new()
+            {
+                ClienteId = entidad.ClienteId,
+                DescripcionSolicitud = entidad.DescripcionSolicitud,
+                FechaLimiteEntrega = entidad.FechaLimiteEntrega,
+                Estado = entidad.Estado,
+                RequiereMasInformacion = entidad.RequiereMasInformacion,
+                InformacionRecibida = entidad.InformacionRecibida,
+                EsViableTecnicamente = entidad.EsViableTecnicamente,
+                NotasAdicionales = entidad.NotasAdicionales
+            };
+    }
+}
+
+<style>
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 1.5rem;
+}
+
+.card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
+    padding: 1.5rem;
+}
+
+.card header {
+    margin-bottom: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid .full {
+    grid-column: 1 / -1;
+}
+
+.input {
+    width: 100%;
+    padding: .5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.btn {
+    padding: .5rem .75rem;
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn.secondary {
+    background: #6c757d;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.table th,
+.table td {
+    border: 1px solid #e2e8f0;
+    padding: .5rem;
+    text-align: left;
+}
+
+.table th {
+    background: #f8fafc;
+}
+
+.link {
+    background: none;
+    border: none;
+    color: #0d6efd;
+    cursor: pointer;
+    margin-right: .5rem;
+}
+
+.link:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.alert {
+    padding: .75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.alert.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.alert.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.selected {
+    background: #eff6ff;
+}
+
+.filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.filtros .acciones {
+    margin-left: auto;
+}
+
+.acciones-form {
+    display: flex;
+    gap: .75rem;
+}
+
+@media (max-width: 992px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+</style>

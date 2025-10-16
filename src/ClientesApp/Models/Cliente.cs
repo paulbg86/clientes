@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace ClientesApp.Models
@@ -15,6 +16,8 @@ namespace ClientesApp.Models
         public string? Telefono { get; set; }
 
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
+
+        public ICollection<PendienteCliente> Pendientes { get; set; } = new List<PendienteCliente>();
     }
 }
 
