@@ -1,0 +1,6 @@
+html, body { font-family: system-ui, Arial, sans-serif; }
+body { margin: 0; }
+.page { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background:#f6f8fa; padding:1rem; border-right:1px solid #e1e4e8; }
+.top-row { background:#fff; border-bottom:1px solid #e1e4e8; height: 3rem; display:flex; align-items:center; }
+.content { padding-top:1rem; }

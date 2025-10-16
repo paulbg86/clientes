@@ -1,0 +1,124 @@
+@page "/clientes"
+@inject ClientesApp.Data.AppDbContext Db
+
+<PageTitle>Clientes</PageTitle>
+
+<h1>Clientes</h1>
+
+<EditForm Model="_nuevo" OnValidSubmit="GuardarAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-grid">
+        <div>
+            <label>Nombre</label>
+            <InputText class="input" @bind-Value="_nuevo.Nombre" />
+        </div>
+        <div>
+            <label>Email</label>
+            <InputText class="input" @bind-Value="_nuevo.Email" />
+        </div>
+        <div>
+            <label>Teléfono</label>
+            <InputText class="input" @bind-Value="_nuevo.Telefono" />
+        </div>
+        <div class="full">
+            <button class="btn" type="submit">Guardar</button>
+            <button class="btn secondary" type="button" @onclick="Limpiar">Limpiar</button>
+        </div>
+    </div>
+</EditForm>
+
+<h2>Listado</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Registro</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (_clientes is null)
+        {
+            <tr><td colspan="6">Cargando...</td></tr>
+        }
+        else if (_clientes.Count == 0)
+        {
+            <tr><td colspan="6">Sin datos</td></tr>
+        }
+        else
+        {
+            @foreach (var c in _clientes)
+            {
+                <tr>
+                    <td>@c.Id</td>
+                    <td>@c.Nombre</td>
+                    <td>@c.Email</td>
+                    <td>@c.Telefono</td>
+                    <td>@c.FechaRegistro.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <button class="link" @onclick="() => EliminarAsync(c.Id)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+    
+</table>
+
+@code {
+    private List<Cliente>? _clientes;
+    private Cliente _nuevo = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _clientes = await Db.Clientes
+            .OrderByDescending(x => x.Id)
+            .ToListAsync();
+    }
+
+    private async Task GuardarAsync()
+    {
+        _nuevo.FechaRegistro = DateTime.UtcNow;
+        Db.Clientes.Add(_nuevo);
+        await Db.SaveChangesAsync();
+        _clientes?.Insert(0, _nuevo);
+        _nuevo = new();
+        StateHasChanged();
+    }
+
+    private void Limpiar()
+    {
+        _nuevo = new();
+    }
+
+    private async Task EliminarAsync(int id)
+    {
+        var c = await Db.Clientes.FindAsync(id);
+        if (c is null) return;
+        Db.Clientes.Remove(c);
+        await Db.SaveChangesAsync();
+        _clientes?.RemoveAll(x => x.Id == id);
+        StateHasChanged();
+    }
+}
+
+@code {
+}
+
+@* Styles *@
+<style>
+.form-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1rem; max-width: 700px; }
+.form-grid .full { grid-column: 1 / -1; }
+.input { width: 100%; padding: 0.5rem; }
+.btn { padding: .5rem .75rem; background: #0d6efd; color: white; border: none; border-radius: 4px; margin-right: .5rem; }
+.btn.secondary { background: #6c757d; }
+.table { border-collapse: collapse; width: 100%; max-width: 900px; }
+.table th, .table td { border: 1px solid #ddd; padding: .5rem; }
+.table th { background: #f6f8fa; text-align: left; }
+.link { background:none; border:none; color:#d00; cursor:pointer; }
+</style>

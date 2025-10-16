@@ -1,0 +1,27 @@
+# .NET / Visual Studio / VS Code ignores
+bin/
+obj/
+**/bin/
+**/obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+artifacts/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Rider
+.idea/
+
+# EF Core local
+Migrations/obj/

@@ -1,0 +1,23 @@
+@page "/"
+@namespace ClientesApp.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="~/" />
+    <title>ClientesApp</title>
+    <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+    <app>
+        <component type="typeof(App)" render-mode="ServerPrerendered" />
+    </app>
+
+    <script src="_framework/blazor.server.js"></script>
+</body>
+</html>
