@@ -1,13 +1,13 @@
-<nav class="nav-menu">
-    <ul>
-        <li><a href="/">Inicio</a></li>
-        <li><a href="/clientes">Clientes</a></li>
-    </ul>
+<nav class="card shadow-sm border-0 h-100">
+    <div class="card-header bg-white py-3">
+        <h2 class="h5 mb-0">Navegación</h2>
+    </div>
+    <div class="list-group list-group-flush">
+        <NavLink class="list-group-item list-group-item-action" href="/" Match="NavLinkMatch.All" ActiveClass="active">
+            Inicio
+        </NavLink>
+        <NavLink class="list-group-item list-group-item-action" href="/clientes" ActiveClass="active">
+            Clientes
+        </NavLink>
+    </div>
 </nav>
-
-<style>
-.nav-menu ul { list-style: none; padding: 0; }
-.nav-menu li { margin: 0.5rem 0; }
-.nav-menu a { text-decoration: none; color: #0366d6; }
-.nav-menu a:hover { text-decoration: underline; }
-</style>

@@ -1,17 +1,49 @@
 @inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<div class="d-flex flex-column min-vh-100">
+    <header class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">ClientesApp</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+                    aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Inicio</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/clientes">Clientes</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://learn.microsoft.com/aspnet/core/" target="_blank">Docs</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-grow-1 py-4 bg-light">
+        <div class="container">
+            <div class="row g-4">
+                <aside class="col-12 col-lg-4 col-xxl-3">
+                    <NavMenu />
+                </aside>
+                <main class="col-12 col-lg-8 col-xxl-9">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-4">
+                            @Body
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">Docs</a>
+    <footer class="bg-dark text-white-50 py-3 mt-auto">
+        <div class="container text-center">
+            <small>&copy; @DateTime.Now.Year - ClientesApp</small>
         </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+    </footer>
 </div>
